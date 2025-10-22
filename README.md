@@ -7,7 +7,7 @@ It lets developers package applications along with all dependencies (like OS lib
 Traditional deployment (VMs, manual setups) had issues like:
 
 - “Works on my machine” problems
-- Heavy virtual machines (VMs) with separate OS
+- Heavy virtual machines (VMs) with separate OS (imagine  running a separate VM for each part of your app😭)
 - Complex dependency management
 
 Docker solves this by:
@@ -15,6 +15,15 @@ Docker solves this by:
 - Creating **isolated environments** using Linux kernel features (namespaces + cgroups(control groups))
 - Sharing the host OS kernel (so it’s super lightweight)
 - Running multiple apps on the same machine without conflict
+
+| Feature | Docker | Virtual Machine (VM) |
+| --- | --- | --- |
+| Architecture | Container-based (shares host OS) | Full OS + hypervisor |
+| Startup Time | Fast (seconds) | Slow (minutes) |
+| Resource Efficiency | Lightweight, low overhead | Heavy, needs more CPU/RAM |
+| Isolation | Process-level | Full hardware-level |
+| Portability | Very portable (image runs anywhere) | Less portable due to full OS |
+| Size | Small (~10s–100s MB) | Large (in GBs) |
 
 ## ⚙️ Core Docker Concepts
 
@@ -27,6 +36,41 @@ Docker solves this by:
 | **Docker Engine** | Core runtime that builds and runs containers. |
 | **Volumes** | Way to persist data beyond the life of a container. |
 | **Networks** | Allows containers to talk to each other securely. |
+
+#### Image vs Container
+
+| Feature | Docker Image | Docker Container |
+| --- | --- | --- |
+| Definition | Blueprint / template | Running instance of an image |
+| State | Immutable | Mutable |
+| Storage | Stored on disk | Active in memory + filesystem |
+| Lifecycle | Built, stored, versioned | Created, started, stopped, destroyed |
+
+#### Engine vs Docker-compose
+| Feature | Docker Engine | Docker Compose |
+| --- | --- | --- |
+| Definition | Core runtime that builds, runs, and manages individual containers | CLI tool that orchestrates multi-container applications |
+| Role | Executes container operations | Sends instructions to Docker Engine based on `docker-compose.yml` |
+| Runs containers? | Yes | No — relies on Docker Engine to run containers |
+| Scope | Single container at a time | Multiple interdependent containers together |
+| Configuration | Commands like `docker run`, `docker build` | YAML file (`docker-compose.yml`) defines services, networks, and volumes |
+| Use Case | Simple apps or testing | Full-stack applications or multi-container setups |
+| Analogy | Engine of a car | Driver coordinating multiple cars |
+
+#### 🧠What Are Namespaces?
+A namespace is a Linux kernel feature that isolates system resources for processes.
+It’s like saying:
+
+> “You get your own little world -> your own view of the system -> where it looks like you’re the only one running.”
+
+So when Docker runs a container, it uses namespaces to make it look like the container has its own process list, network, filesystem, and hostname, even though it’s actually sharing the same Linux kernel with the host machine.
+
+Namespaces handle isolation (what each container can see).
+cgroups (control groups) handle limitation (how much CPU/memory each container can use).
+
+Together:
+> Namespaces → isolation
+> cgroups → resource control
 
 ## 🚀 Basic Docker Commands
 
@@ -42,6 +86,11 @@ Docker solves this by:
 | `docker exec -it <container_id> bash` | Enter into a running container |
 | `docker logs <container_id>` | Check container logs |
 | `docker-compose up` | Run multi-container app from docker-compose.yml |
+
+#### Docker Layers and Caching
+Each instruction in Dockerfile (FROM, RUN, COPY, etc.) creates a layer, cached and referred by a SHA256 hash.
+If something doesn’t change, Docker reuses that layer — super efficient.
+
 
 ### Dockerfile
 
@@ -151,6 +200,27 @@ volumes:
 ```
 
 Use `.dockerignore` to avoid copying unnecessary files to your docker container
+
+### 🚀 `docker run` — The most important command
+
+This is used to create + start a container from an image.
+Syntax:
+```bash
+docker run [OPTIONS] IMAGE [COMMAND]
+```
+
+Now let’s break down the flags you often see 👇
+
+
+| Flag | Full Form | Meaning | Example | Why It’s Used |
+| --- | --- | --- | --- | --- |
+| `-d` | detached | Runs container in background (daemon mode) | `docker run -d nginx` | So your terminal doesn’t get stuck running it |
+| `-p` | publish | Maps a host port to a container port | `docker run -p 8080:80 nginx` | Makes the app accessible from your local machine |
+| `-it` | interactive + TTY | Opens interactive terminal | `docker run -it ubuntu bash` | Lets you “get inside” a container and interact |
+| `--name` | name | Gives a container a custom name | `docker run --name myapp nginx` | Easier to manage and reference later |
+| `-v` | volume | Mounts a volume (host → container) | `docker run -v mydata:/app/data myapp` | For persistent data (like databases) |
+| `--rm` | remove | Auto-remove container when it exits | `docker run --rm ubuntu echo hi` | Prevents clutter (temporary containers) |
+| `-e` | environment | Sets environment variables | `docker run -e NODE_ENV=prod myapp` | Passes configuration values |
 
 ## 📝 Official References
 
